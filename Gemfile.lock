@@ -1,0 +1,67 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    async_sinatra (1.0.0)
+      rack (>= 1.4.1)
+      sinatra (>= 1.3.2)
+    backports (3.1.1)
+    cfoundry (0.4.17)
+      multi_json (~> 1.3)
+      multipart-post (~> 1.1)
+      rubyzip (~> 0.9)
+    cloudfoundry-manager (0.1.0)
+      cfoundry
+      nats
+      net-sftp
+      net-ssh
+      rest-client
+    daemons (1.1.9)
+    eventmachine (0.12.10)
+    json_pure (1.7.7)
+    mime-types (1.19)
+    multi_json (1.7.0)
+    multipart-post (1.1.5)
+    nats (0.4.28)
+      daemons (>= 1.1.5)
+      eventmachine (= 0.12.10)
+      json_pure (>= 1.7.3)
+      thin (>= 1.4.1)
+    net-sftp (2.0.5)
+      net-ssh (>= 2.0.9)
+    net-ssh (2.6.6)
+    rack (1.5.2)
+    rack-protection (1.5.0)
+      rack
+    rack-test (0.6.2)
+      rack (>= 1.0)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
+    rubyzip (0.9.9)
+    sinatra (1.3.6)
+      rack (~> 1.4)
+      rack-protection (~> 1.3)
+      tilt (~> 1.3, >= 1.3.3)
+    sinatra-contrib (1.3.2)
+      backports (>= 2.0)
+      eventmachine
+      rack-protection
+      rack-test
+      sinatra (~> 1.3.0)
+      tilt (~> 1.3)
+    sinatra-reloader (1.0)
+      sinatra-contrib
+    thin (1.5.0)
+      daemons (>= 1.0.9)
+      eventmachine (>= 0.12.6)
+      rack (>= 1.0.0)
+    tilt (1.3.6)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  async_sinatra
+  cloudfoundry-manager
+  sinatra
+  sinatra-reloader
+  thin
