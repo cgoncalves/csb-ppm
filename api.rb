@@ -1,6 +1,50 @@
 require 'sinatra'
 require "sinatra/reloader" if development?
 require 'cloudfoundry-manager'
+require 'resque'
+require 'sinatra/redis'
+
+configure do
+  uri = URI.parse(ENV["REDISTOGO_URL"])
+  Resque.redis = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+  Resque.redis.namespace = "resque:example"
+  set :redis, ENV["REDISTOGO_URL"]
+end
+
+class StartJob
+  @queue = "ppm"
+
+  def self.perform(config)
+      paas = Cloudfoundry::Manager::Bootstrap.new(config[:ssh][:host], config[:ssh][:user], config[:ssh][:password])
+      paas.start
+  rescue Resque::TermException
+    Resque.enqueue(self, id)
+  end
+end
+
+class SetupJob
+  @queue = "ppm"
+
+  def self.perform(host, user, password, id, domain, ip, callback)
+      puts "Running setup..."
+      Cloudfoundry::Manager.load_config('clouds.yaml')
+      paas = Cloudfoundry::Manager::Bootstrap.new(host, user, password)
+      paas.setup(id, domain, ip)
+      puts "Setup about to end. Calling POST callback"
+      require 'net/http'
+      uri = URI.parse(URI.unescape(callback))
+      req = Net::HTTP::Post.new(url.path)
+      req.basic_auth 'portal', 'qwerty321' # TODO
+      res = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
+      case res
+      when Net::HTTPSuccess, Net::HTTPRedirection
+        # OK
+      else
+        res.error!
+      end
+      puts "Finished running setup!"
+  end
+end
 
 module Cloudfoundry
   module Manager
@@ -29,13 +73,20 @@ module Cloudfoundry
 
       post '/setup' do
         #protected!
+        puts "Enqueuing setup"
+        Resque.enqueue(SetupJob, params['host'], params['user'], params['password'], params['id'], params['domain'], params['ip'], params['callback'])
+        puts "Enqueued setup"
+        status 202
+      end
+
+      post '/start' do
+        puts "Executing PaaS start operation"
         Cloudfoundry::Manager.load_config('clouds.yaml')
-        bootstrap = Cloudfoundry::Manager::Bootstrap.new(params['host'], params['user'], params['password'])
-        #bootstrap.vcap_dir = "/home/#{params['user']}/vcap"
-        #bootstrap.upload_file('/Users/cgoncalves/Downloads/vcap-HEAD.tar', "/home/#{params['user']}/vcap-HEAD.tar")
-        #bootstrap.deploy(params['id'], params['location'], params['domain'])
-        bootstrap.setup(params['id'], params['location'], params['domain'])
-        status 200
+        configs = Cloudfoundry::Manager.config['clouds'].select{ |p| p[:id] == params[:id] }
+        return status 404 if configs.nil? or configs.empty?
+        Resque.enqueue(StartJob, configs.first)
+        puts "Ended executing PaaS start operation"
+        status 202
       end
 
       #get '/log' do
