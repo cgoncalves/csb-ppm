@@ -48,7 +48,7 @@ end
 
 module Cloudfoundry
   module Manager
-    class Server
+    class Server < Sinatra::Base
 
       helpers do
         def protected!
